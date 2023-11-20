@@ -1,2 +1,0 @@
-# image-comparison
-# image-comparison

@@ -1,0 +1,8 @@
+aws iam create-role --role-name LambdaExecutionRoleRRI --assume-role-policy-document file://policy.json
+echo arn:aws:iam::909248543650:role/LambdaExecutionRoleRRI > rolerecord.txt
+ARN=arn:aws:iam::909248543650:role/LambdaExecutionRoleRRI
+mv rolerecord.txt arnrecord.txt
+aws iam attach-role-policy --role-name LambdaExecutionRoleRRI --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+aws lambda create-function     --function-name ImagesComparison     --zip-file fileb://deployment_package.zip     --runtime python3.8     --handler lambda_function.lambda_handler     --role arn:aws:iam::909248543650:role/LambdaExecutionRoleRRI     --timeout 10     --memory-size 128
+aws iam put-role-policy --role-name LambdaExecutionRoleRRI --policy-name S3AccessPolicy --policy-document file://s3policy.json
+aws lambda invoke --function-name ImagesComparison --payload '{}' output.json

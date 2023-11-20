@@ -1,0 +1,1 @@
+arn:aws:iam::909248543650:role/LambdaExecutionRoleRRI
