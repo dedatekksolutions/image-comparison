@@ -6,3 +6,4 @@ aws iam attach-role-policy --role-name LambdaExecutionRoleRRI --policy-arn arn:a
 aws lambda create-function     --function-name ImagesComparison     --zip-file fileb://deployment_package.zip     --runtime python3.8     --handler lambda_function.lambda_handler     --role arn:aws:iam::909248543650:role/LambdaExecutionRoleRRI     --timeout 10     --memory-size 128
 aws iam put-role-policy --role-name LambdaExecutionRoleRRI --policy-name S3AccessPolicy --policy-document file://s3policy.json
 aws lambda invoke --function-name ImagesComparison --payload '{}' output.json
+aws lambda update-function-code --function-name ImagesComparison --zip-file fileb://deployment_package1-0.zip

@@ -1,0 +1,117 @@
+aws apigateway create-rest-api --name ImagesComparisonREST-API
+{
+    "id": "ok9ogdv6x0",
+    "name": "ImagesComparisonREST-API",
+    "createdDate": "2023-11-21T23:10:26+11:00",
+    "apiKeySource": "HEADER",
+    "endpointConfiguration": {
+        "types": [
+            "EDGE"
+        ]
+    },
+    "disableExecuteApiEndpoint": false,
+    "rootResourceId": "4d26993262"
+}
+
+API=ok9ogdv6x0
+
+aws apigateway get-resources --rest-api-id $API
+{
+    "items": [
+        {
+            "id": "4d26993262",
+            "path": "/"
+        }
+    ]
+}
+
+PARENTID=4d26993262
+
+aws apigateway create-resource --rest-api-id $API --path-part DynamoDBManager --parent-id $PARENTID
+{
+    "id": "3ywerx",
+    "parentId": "4d26993262",
+    "pathPart": "DynamoDBManager",
+    "path": "/DynamoDBManager"
+}
+
+RESOURCE=3ywerx
+
+aws apigateway put-method --rest-api-id $API --resource-id $RESOURCE --http-method POST --authorization-type NONE
+{
+    "httpMethod": "POST",
+    "authorizationType": "NONE",
+    "apiKeyRequired": false
+}
+
+REGION=us-east-1
+
+ACCOUNT=909248543650
+
+LAMBDANAME=ImagesComparison
+
+aws apigateway put-integration --rest-api-id $API --resource-id $RESOURCE  --http-method POST --type AWS --integration-http-method POST  --uri arn:aws:apigateway:$REGION:lambda:path/2015-03-31/functions/arn:aws:lambda:$REGION:$ACCOUNT:function:$LAMBDANAME/invocations
+{
+    "type": "AWS",
+    "httpMethod": "POST",
+    "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:909248543650:function:ImagesComparison/invocations",
+    "passthroughBehavior": "WHEN_NO_MATCH",
+    "timeoutInMillis": 29000,
+    "cacheNamespace": "3ywerx",
+    "cacheKeyParameters": []
+}
+
+aws apigateway put-method-response --rest-api-id $API  --resource-id $RESOURCE --http-method POST  --status-code 200 --response-models application/json=Empty
+{
+    "statusCode": "200",
+    "responseModels": {
+        "application/json": "Empty"
+    }
+}
+
+aws apigateway put-integration-response --rest-api-id $API  --resource-id $RESOURCE --http-method POST  --status-code 200 --response-templates application/json=""
+{
+    "statusCode": "200",
+    "responseTemplates": {
+        "application/json": null
+    }
+}
+
+aws apigateway create-deployment --rest-api-id $API --stage-name prod
+{
+    "id": "pz9ok6",
+    "createdDate": "2023-11-21T23:21:16+11:00"
+}
+
+aws lambda add-permission --function-name $LAMBDANAME --statement-id apigateway-test-2 --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:$REGION:$ACCOUNT:$API/*/POST/DynamoDBManager"
+{
+    "Statement": "{\"Sid\":\"apigateway-test-2\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:us-east-1:909248543650:function:ImagesComparison\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"arn:aws:execute-api:us-east-1:909248543650:ok9ogdv6x0/*/POST/DynamoDBManager\"}}}"
+}
+aws lambda add-permission --function-name $LAMBDANAME --statement-id apigateway-prod-2 --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:$REGION:$ACCOUNT:$API/prod/POST/DynamoDBManager"
+{
+    "Statement": "{\"Sid\":\"apigateway-prod-2\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:us-east-1:909248543650:function:ImagesComparison\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"arn:aws:execute-api:us-east-1:909248543650:ok9ogdv6x0/prod/POST/DynamoDBManager\"}}}"
+}
+
+aws apigateway test-invoke-method --rest-api-id $API --resource-id $RESOURCE --http-method POST --path-with-query-string "" --body file://input.json
+"" --body file://input.json
+{
+    "status": 200,
+    "body": "\"Different\"",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Amzn-Trace-Id": "Root=1-655ca197-a2984c541f82c7cbfc8dc8f5;Sampled=0;lineage=18cd4a70:0"
+    },
+    "multiValueHeaders": {
+        "Content-Type": [
+            "application/json"
+        ],
+        "X-Amzn-Trace-Id": [
+            "Root=1-655ca197-a2984c541f82c7cbfc8dc8f5;Sampled=0;lineage=18cd4a70:0"
+        ]
+    },
+    "log": "Execution log for request 14d0edc2-e3b4-4407-8983-73a7dd56b683\nTue Nov 21 12:24:55 UTC 2023 : Starting execution for request: 14d0edc2-e3b4-4407-8983-73a7dd56b683\nTue Nov 21 12:24:55 UTC 2023 : HTTP Method: POST, Resource Path: /DynamoDBManager\nTue Nov 21 12:24:55 UTC 2023 : Method request path: {}\nTue Nov 21 12:24:55 UTC 2023 : Method request query string: {}\nTue Nov 21 12:24:55 UTC 2023 : Method request headers: {}\nTue Nov 21 12:24:55 UTC 2023 : Method request body before transformations: {}\n\nTue Nov 21 12:24:55 UTC 2023 : Endpoint request URI: https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:909248543650:function:ImagesComparison/invocations\nTue Nov 21 12:24:55 UTC 2023 : Endpoint request headers: {X-Amz-Date=20231121T122455Z, x-amzn-apigateway-api-id=ok9ogdv6x0, Accept=application/json, User-Agent=AmazonAPIGateway_ok9ogdv6x0, Host=lambda.us-east-1.amazonaws.com, X-Amz-Content-Sha256=ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356, X-Amzn-Trace-Id=Root=1-655ca197-a2984c541f82c7cbfc8dc8f5, x-amzn-lambda-integration-tag=14d0edc2-e3b4-4407-8983-73a7dd56b683, Authorization=*********************************************************************************************************************************************************************************************************************************************************************************************************************************************dcd3e7, X-Amz-Source-Arn=arn:aws:execute-api:us-east-1:909248543650:ok9ogdv6x0/test-invoke-stage/POST/DynamoDBManager, X-Amz-Security-Token=IQoJb3JpZ2luX2VjELz//////////wEaCXVzLWVhc3QtMSJIMEYCIQDy3aNWI3qPqb5cLhFYgm3ZX3FdkebqKoMK59y4zTnagAIhAMELl7rIHkPfjRN2CM8KT3Bb1zVxU [TRUNCATED]\nTue Nov 21 12:24:55 UTC 2023 : Endpoint request body after transformations: {}\n\nTue Nov 21 12:24:55 UTC 2023 : Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:909248543650:function:ImagesComparison/invocations\nTue Nov 21 12:25:00 UTC 2023 : Received response. Status: 200, Integration latency: 4625 ms\nTue Nov 21 12:25:00 UTC 2023 : Endpoint response headers: {Date=Tue, 21 Nov 2023 12:25:00 GMT, Content-Type=application/json, Content-Length=11, Connection=keep-alive, x-amzn-RequestId=abb62034-d6a8-40a7-864e-9ab029d04406, x-amzn-Remapped-Content-Length=0, X-Amz-Executed-Version=$LATEST, X-Amzn-Trace-Id=root=1-655ca197-a2984c541f82c7cbfc8dc8f5;sampled=0;lineage=18cd4a70:0}\nTue Nov 21 12:25:00 UTC 2023 : Endpoint response body before transformations: \"Different\"\nTue Nov 21 12:25:00 UTC 2023 : Method response body after transformations: \"Different\"\nTue Nov 21 12:25:00 UTC 2023 : Method response headers: {X-Amzn-Trace-Id=Root=1-655ca197-a2984c541f82c7cbfc8dc8f5;Sampled=0;lineage=18cd4a70:0, Content-Type=application/json}\nTue Nov 21 12:25:00 UTC 2023 : Successfully completed execution\nTue Nov 21 12:25:00 UTC 2023 : Method completed with status: 200\n",
+    "latency": 4628
+}
+
+curl -X POST -d "{}" https://$API.execute-api.$REGION.amazonaws.com/prod/DynamoDBManager
+"Different"
