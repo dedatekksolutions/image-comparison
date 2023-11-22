@@ -1,0 +1,5 @@
+#/bin/bash
+
+rm deployment_package.zip
+zip deployment_package.zip lambda_function.py virt/lib/python3.8/site-packages/
+aws lambda update-function-code --function-name ImagesComparison --zip-file fileb://deployment_package.zip

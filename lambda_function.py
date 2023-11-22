@@ -10,54 +10,42 @@ def lambda_handler(event, context):
     pending_bucket = 'retroideal-member-vehicle-images'
     pending_prefix = 'pending-vehicle-images/'
 
+    # Update DynamoDB table name
+    table_name = 'retroideal-vehicle-image-table'
+
     # Create S3 and DynamoDB clients
     s3 = boto3.client('s3')
     dynamodb = boto3.client('dynamodb')
 
-    # Get the filename from the event
-    payload = json.loads(event['body']) if 'body' in event else None
-    filename = payload.get('filename') if payload else None
+    # Check if the event is from API Gateway
+    if 'body' in event:
+        payload = json.loads(event['body'])
+    else:
+        # For local testing
+        payload = event
 
-    if filename:
-        # Retrieve the content of the pending image
-        pending_object_data = s3.get_object(Bucket=pending_bucket, Key=pending_prefix + filename)
-        pending_content = pending_object_data['Body'].read()
+    filenames = payload.get('filename', [])
 
-        # Get the list of objects in the approved bucket
-        approved_objects = s3.list_objects_v2(Bucket=approved_bucket, Prefix=approved_prefix)['Contents']
+    print(f"Received filenames: {filenames}")
 
-        # Flag to check if any match found
-        match_found = False
+    for filename in filenames:
+        # Construct the DynamoDB key based on the primary key attribute
+        key_attribute_name = 'image-id'
+        key_value = filename
 
-        # Compare each object in the approved bucket with the pending image
-        for approved_object in approved_objects:
-            approved_key = approved_object['Key']
+        # Update DynamoDB DeleteItem operation to use the correct key
+        try:
+            response = dynamodb.delete_item(
+                TableName=table_name,
+                Key={key_attribute_name: {'S': key_value}}
+            )
+            print(f"DynamoDB Delete Response for filename {filename}: {response}")
 
-            # Skip if the object is a folder
-            if approved_key.endswith('/'):
-                continue
+        except Exception as e:
+            print(f"Error deleting item for filename {filename}: {e}")
 
-            # Retrieve the content of the approved image
-            approved_object_data = s3.get_object(Bucket=approved_bucket, Key=approved_key)
-            approved_content = approved_object_data['Body'].read()
-
-            # Compare image content using hash
-            if hashlib.md5(pending_content).hexdigest() == hashlib.md5(approved_content).hexdigest():
-                match_found = True
-                break  # Found a match, no need to continue searching
-
-        # Update status in DynamoDB based on match
-        table_name = 'retroideal-member-vehicle-images'
-        status = 'preapproved' if not match_found else 'declined'
-
-        dynamodb.update_item(
-            TableName=table_name,
-            Key={'filename': {'S': filename}},
-            UpdateExpression='SET #s = :status',
-            ExpressionAttributeNames={'#s': 'status'},
-            ExpressionAttributeValues={':status': {'S': status}}
-        )
-
-        return f"Status updated to {status}"
-
-    return "Filename not provided in payload"
+    print(f"Items deleted for the provided filenames: {filenames}")
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"message": f"Items deleted for the provided filenames: {filenames}"})
+    }

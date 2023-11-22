@@ -1,3 +1,4 @@
+zip deployment_package.zip lambda_function1-0.py virt/lib/python3.8/site-packages/
 aws iam create-role --role-name LambdaExecutionRoleRRI --assume-role-policy-document file://policy.json
 echo arn:aws:iam::909248543650:role/LambdaExecutionRoleRRI > rolerecord.txt
 ARN=arn:aws:iam::909248543650:role/LambdaExecutionRoleRRI

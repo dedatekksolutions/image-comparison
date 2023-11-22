@@ -115,3 +115,4 @@ aws apigateway test-invoke-method --rest-api-id $API --resource-id $RESOURCE --h
 
 curl -X POST -d "{}" https://$API.execute-api.$REGION.amazonaws.com/prod/DynamoDBManager
 "Different"
+https://ok9ogdv6x0.execute-api.us-east-1.amazonaws.com/prod/DynamoDBManager
