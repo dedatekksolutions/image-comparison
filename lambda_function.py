@@ -33,33 +33,40 @@ def lambda_handler(event, context):
         key_attribute_name = 'image-id'
         key_value = filename
 
-        # Check if the file exists in approved folder
-        approved_key = approved_prefix + filename
+        # Check if the item exists in DynamoDB
         try:
-            s3.head_object(Bucket=approved_bucket, Key=approved_key)
-            # If file exists in approved folder, update status to 'approved'
-            update_status(dynamodb, table_name, key_attribute_name, key_value, "approved")
+            response = dynamodb.get_item(
+                TableName=table_name,
+                Key={key_attribute_name: {'S': key_value}}
+            )
+            item = response.get('Item')
+            if item:
+                # Item exists, update its status to 'declined'
+                update_expression = "SET #statusAttr = :statusValue"
+                expression_attribute_names = {"#statusAttr": "status"}
+                expression_attribute_values = {":statusValue": {"S": "declined"}}
+            else:
+                # Item doesn't exist, update status to 'pre-approved'
+                update_expression = "SET #statusAttr = :statusValue"
+                expression_attribute_names = {"#statusAttr": "status"}
+                expression_attribute_values = {":statusValue": {"S": "pre-approved"}}
+
+            # Perform the update operation
+            response = dynamodb.update_item(
+                TableName=table_name,
+                Key={key_attribute_name: {'S': key_value}},
+                UpdateExpression=update_expression,
+                ExpressionAttributeNames=expression_attribute_names,
+                ExpressionAttributeValues=expression_attribute_values,
+                ReturnValues="UPDATED_NEW"  # Modify as needed
+            )
+            print(f"DynamoDB Update Response for filename {filename}: {response}")
+
         except Exception as e:
-            # If file doesn't exist in approved folder, update status to 'preapproved'
-            update_status(dynamodb, table_name, key_attribute_name, key_value, "preapproved")
-            print(f"File {filename} not found in approved folder. Status updated to 'preapproved'.")
+            print(f"Error updating status for filename {filename}: {e}")
 
     print(f"Status updated for the provided filenames: {filenames}")
     return {
         "statusCode": 200,
         "body": json.dumps({"message": f"Status updated for the provided filenames: {filenames}"})
     }
-
-def update_status(dynamodb, table_name, key_attribute_name, key_value, new_status):
-    try:
-        response = dynamodb.update_item(
-            TableName=table_name,
-            Key={key_attribute_name: {'S': key_value}},
-            UpdateExpression="SET #statusAttr = :statusValue",
-            ExpressionAttributeNames={"#statusAttr": "status"},
-            ExpressionAttributeValues={":statusValue": {"S": new_status}},
-            ReturnValues="UPDATED_NEW"
-        )
-        print(f"DynamoDB Update Response for {key_value}: {response}")
-    except Exception as e:
-        print(f"Error updating status for {key_value}: {e}")
