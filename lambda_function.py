@@ -33,19 +33,23 @@ def lambda_handler(event, context):
         key_attribute_name = 'image-id'
         key_value = filename
 
-        # Update DynamoDB DeleteItem operation to use the correct key
+        # Update DynamoDB UpdateItem operation to change status to 'declined'
         try:
-            response = dynamodb.delete_item(
+            response = dynamodb.update_item(
                 TableName=table_name,
-                Key={key_attribute_name: {'S': key_value}}
+                Key={key_attribute_name: {'S': key_value}},
+                UpdateExpression="SET #statusAttr = :statusValue",
+                ExpressionAttributeNames={"#statusAttr": "status"},
+                ExpressionAttributeValues={":statusValue": {"S": "declined"}},
+                ReturnValues="UPDATED_NEW"
             )
-            print(f"DynamoDB Delete Response for filename {filename}: {response}")
+            print(f"DynamoDB Update Response for filename {filename}: {response}")
 
         except Exception as e:
-            print(f"Error deleting item for filename {filename}: {e}")
+            print(f"Error updating status for filename {filename}: {e}")
 
-    print(f"Items deleted for the provided filenames: {filenames}")
+    print(f"Status changed to 'declined' for the provided filenames: {filenames}")
     return {
         "statusCode": 200,
-        "body": json.dumps({"message": f"Items deleted for the provided filenames: {filenames}"})
+        "body": json.dumps({"message": f"Status changed to 'declined' for the provided filenames: {filenames}"})
     }
