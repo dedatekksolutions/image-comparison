@@ -33,40 +33,22 @@ def lambda_handler(event, context):
         key_attribute_name = 'image-id'
         key_value = filename
 
-        # Check if the item exists in DynamoDB
+        # Update DynamoDB UpdateItem operation to set status to 'unique'
         try:
-            response = dynamodb.get_item(
-                TableName=table_name,
-                Key={key_attribute_name: {'S': key_value}}
-            )
-            item = response.get('Item')
-            if item:
-                # Item exists, update its status to 'declined'
-                update_expression = "SET #statusAttr = :statusValue"
-                expression_attribute_names = {"#statusAttr": "status"}
-                expression_attribute_values = {":statusValue": {"S": "declined"}}
-            else:
-                # Item doesn't exist, update status to 'pre-approved'
-                update_expression = "SET #statusAttr = :statusValue"
-                expression_attribute_names = {"#statusAttr": "status"}
-                expression_attribute_values = {":statusValue": {"S": "pre-approved"}}
-
-            # Perform the update operation
             response = dynamodb.update_item(
                 TableName=table_name,
                 Key={key_attribute_name: {'S': key_value}},
-                UpdateExpression=update_expression,
-                ExpressionAttributeNames=expression_attribute_names,
-                ExpressionAttributeValues=expression_attribute_values,
-                ReturnValues="UPDATED_NEW"  # Modify as needed
+                UpdateExpression='SET #status = :status',
+                ExpressionAttributeNames={'#status': 'status'},
+                ExpressionAttributeValues={':status': {'S': 'unique'}}
             )
             print(f"DynamoDB Update Response for filename {filename}: {response}")
 
         except Exception as e:
-            print(f"Error updating status for filename {filename}: {e}")
+            print(f"Error updating item for filename {filename}: {e}")
 
-    print(f"Status updated for the provided filenames: {filenames}")
+    print(f"Status updated to 'unique' for the provided filenames: {filenames}")
     return {
         "statusCode": 200,
-        "body": json.dumps({"message": f"Status updated for the provided filenames: {filenames}"})
+        "body": json.dumps({"message": f"Status updated to 'unique' for the provided filenames: {filenames}"})
     }
