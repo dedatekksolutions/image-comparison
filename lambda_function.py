@@ -28,7 +28,6 @@ def lambda_handler(event, context):
     print(f"Received filenames: {filenames}")
 
     for filename in filenames:
-        # Query DynamoDB to find the item with matching filename
         try:
             response = dynamodb.scan(
                 TableName=table_name,
@@ -36,7 +35,6 @@ def lambda_handler(event, context):
                 ExpressionAttributeValues={':filename': {'S': filename}}
             )
 
-            # Check if there's a matching item
             if response['Count'] > 0:
                 image_id = response['Items'][0]['image-id']['S']
 
@@ -49,6 +47,19 @@ def lambda_handler(event, context):
                     ExpressionAttributeValues={':status': {'S': 'approved'}}
                 )
                 print(f"DynamoDB Update Response for filename {filename}: {update_response}")
+
+                # Move the image from pending to approved folder in S3
+                pending_image_key = f"{pending_prefix}{filename}"
+                approved_image_key = f"{approved_prefix}{filename}"
+                
+                s3.copy_object(
+                    Bucket=approved_bucket,
+                    Key=approved_image_key,
+                    CopySource={'Bucket': pending_bucket, 'Key': pending_image_key}
+                )
+                s3.delete_object(Bucket=pending_bucket, Key=pending_image_key)
+                print(f"Image moved from '{pending_image_key}' to '{approved_image_key}'")
+
             else:
                 print(f"No item found for filename {filename}")
 
