@@ -1,5 +1,4 @@
 import boto3
-import hashlib
 import json
 
 def lambda_handler(event, context):
@@ -29,26 +28,35 @@ def lambda_handler(event, context):
     print(f"Received filenames: {filenames}")
 
     for filename in filenames:
-        # Construct the DynamoDB key based on the primary key attribute
-        key_attribute_name = 'image-id'
-        key_value = filename
-
-        # Update DynamoDB UpdateItem operation to set status to 'unique'
+        # Query DynamoDB to find the item with matching filename
         try:
-            response = dynamodb.update_item(
+            response = dynamodb.scan(
                 TableName=table_name,
-                Key={key_attribute_name: {'S': key_value}},
-                UpdateExpression='SET #status = :status',
-                ExpressionAttributeNames={'#status': 'status'},
-                ExpressionAttributeValues={':status': {'S': 'unique'}}
+                FilterExpression='filename = :filename',
+                ExpressionAttributeValues={':filename': {'S': filename}}
             )
-            print(f"DynamoDB Update Response for filename {filename}: {response}")
+
+            # Check if there's a matching item
+            if response['Count'] > 0:
+                image_id = response['Items'][0]['image-id']['S']
+
+                # Update DynamoDB UpdateItem operation to set status to 'approved' using image-id
+                update_response = dynamodb.update_item(
+                    TableName=table_name,
+                    Key={'image-id': {'S': image_id}},
+                    UpdateExpression='SET #status = :status',
+                    ExpressionAttributeNames={'#status': 'status'},
+                    ExpressionAttributeValues={':status': {'S': 'approved'}}
+                )
+                print(f"DynamoDB Update Response for filename {filename}: {update_response}")
+            else:
+                print(f"No item found for filename {filename}")
 
         except Exception as e:
-            print(f"Error updating item for filename {filename}: {e}")
+            print(f"Error processing filename {filename}: {e}")
 
-    print(f"Status updated to 'unique' for the provided filenames: {filenames}")
+    print(f"Status updated to 'approved' for the provided filenames: {filenames}")
     return {
         "statusCode": 200,
-        "body": json.dumps({"message": f"Status updated to 'unique' for the provided filenames: {filenames}"})
+        "body": json.dumps({"message": f"Status updated to 'approved' for the provided filenames: {filenames}"})
     }
