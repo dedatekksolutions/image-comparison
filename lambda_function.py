@@ -38,20 +38,23 @@ def lambda_handler(event, context):
             if response['Count'] > 0:
                 image_id = response['Items'][0]['image-id']['S']
 
-                # Update DynamoDB UpdateItem operation to set status to 'approved' using image-id
+                # Update DynamoDB UpdateItem operation to set status to 'approved' and update URL using image-id
+                approved_image_key = f"{approved_prefix}{filename}"
+                pending_image_key = f"{pending_prefix}{filename}"
+
                 update_response = dynamodb.update_item(
                     TableName=table_name,
                     Key={'image-id': {'S': image_id}},
-                    UpdateExpression='SET #status = :status',
+                    UpdateExpression='SET #status = :status, image_url = :image_url',
                     ExpressionAttributeNames={'#status': 'status'},
-                    ExpressionAttributeValues={':status': {'S': 'approved'}}
+                    ExpressionAttributeValues={
+                        ':status': {'S': 'approved'},
+                        ':image_url': {'S': f"https://{approved_bucket}.s3.amazonaws.com/{approved_image_key}"}
+                    }
                 )
                 print(f"DynamoDB Update Response for filename {filename}: {update_response}")
 
                 # Move the image from pending to approved folder in S3
-                pending_image_key = f"{pending_prefix}{filename}"
-                approved_image_key = f"{approved_prefix}{filename}"
-                
                 s3.copy_object(
                     Bucket=approved_bucket,
                     Key=approved_image_key,
